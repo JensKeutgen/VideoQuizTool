@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doku Quiz Generator</title>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        // --- ICONS ---
+        const Download = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>;
+        const Upload = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>;
+        const FileCode2 = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m5 12-3 3 3 3"/><path d="m9 18 3-3-3-3"/></svg>;
+        const FileText = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>;
+        const CheckCircle2 = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>;
+        const AlertCircle = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>;
+        const Bot = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="14" x="3" y="8" rx="2"/><path d="M12 5a3 3 0 1 0-3 3"/><line x1="9" x2="15" y1="8" y2="8"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>;
+        const Copy = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
+        const Check = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+
+        // --- TEMPLATE LOGIC ---
+        const generateHTML = (title, totalDuration, questionsData) => `<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</title>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin><\/script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin><\/script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neonPink: '#ff2a85',
+                        neonBlue: '#00f3ff',
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b'
+                    }
+                }
+            }
+        }
+    <\/script>
+    <style>
+        body { background-color: #0f172a; color: white; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        input[type=range] { accent-color: #ff2a85; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const questionsData = ${JSON.stringify(questionsData, null, 4).replace(/</g, '\\u003c')};
+        const TOTAL_DURATION = ${totalDuration};
+        const QUIZ_TITLE = ${JSON.stringify(title).replace(/</g, '\\u003c')};
+
+        // --- COMPONENTS ---
+
+        // 1. Multiple Choice Question
+        const MultipleChoice = ({ question, onAnswer }) => {
+            return (
+                <div className="flex flex-col gap-3">
+                    {question.options.map((opt, i) => (
+                        <button 
+                            key={i}
+                            onClick={() => onAnswer(opt === question.correctAnswer, opt)}
+                            className="w-full text-left p-4 rounded-xl bg-slate-800 border border-slate-600 hover:border-neonBlue hover:bg-slate-700 transition-all text-lg"
+                        >
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            );
+        };
+
+        // 2. Slider / Estimation Question
+        const SliderQuestion = ({ question, onAnswer }) => {
+            const [val, setVal] = useState((question.max - question.min) / 2);
+
+            const handleSubmit = () => {
+                const isCorrect = Math.abs(val - question.correctAnswer) <= question.tolerance;
+                onAnswer(isCorrect, val);
+            };
+
+            return (
+                <div className="flex flex-col gap-6 items-center">
+                    <div className="text-4xl font-bold text-neonPink tracking-wider">
+                        {val.toLocaleString('de-DE')} {question.unit}
+                    </div>
+                    <input 
+                        type="range" 
+                        min={question.min} 
+                        max={question.max} 
+                        step={question.step}
+                        value={val}
+                        onChange={(e) => setVal(Number(e.target.value))}
+                        className="w-full h-3 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between w-full text-sm text-slate-400">
+                        <span>{question.min}</span>
+                        <span>{question.max}</span>
+                    </div>
+                    <button 
+                        onClick={handleSubmit}
+                        className="mt-4 px-8 py-3 bg-neonPink hover:bg-pink-600 text-white font-bold rounded-full transition-all text-lg shadow-[0_0_15px_rgba(255,42,133,0.5)]"
+                    >
+                        Antwort einloggen
+                    </button>
+                </div>
+            );
+        };
+
+        // 3. Ordering Question
+        const OrderQuestion = ({ question, onAnswer }) => {
+            const [selected, setSelected] = useState([]);
+            
+            // Randomize options on mount
+            const [shuffledOptions] = useState(() => [...question.options].sort(() => Math.random() - 0.5));
+
+            const toggleOption = (opt) => {
+                if (selected.includes(opt)) {
+                    setSelected(selected.filter(o => o !== opt));
+                } else {
+                    setSelected([...selected, opt]);
+                }
+            };
+
+            const handleSubmit = () => {
+                let isCorrect = true;
+                if (selected.length !== question.correctOrder.length) isCorrect = false;
+                else {
+                    for(let i=0; i<selected.length; i++) {
+                        if(selected[i] !== question.correctOrder[i]) isCorrect = false;
+                    }
+                }
+                onAnswer(isCorrect, selected);
+            };
+
+            return (
+                <div className="flex flex-col gap-6">
+                    <p className="text-slate-300 text-sm">Klicke die Begriffe in der richtigen Reihenfolge an (1. = Oben, 4. = Unten). Um eine Auswahl rückgängig zu machen, klicke den Begriff erneut an.</p>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                        {shuffledOptions.map((opt, i) => {
+                            const selectedIndex = selected.indexOf(opt);
+                            return (
+                                <button 
+                                    key={i}
+                                    onClick={() => toggleOption(opt)}
+                                    className={\`relative p-4 rounded-xl border transition-all font-medium text-left
+                                        \${selectedIndex !== -1 
+                                            ? 'bg-neonBlue/20 border-neonBlue text-white' 
+                                            : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700'}\`}
+                                >
+                                    {selectedIndex !== -1 && (
+                                        <span className="absolute top-1/2 -translate-y-1/2 right-4 w-8 h-8 rounded-full bg-neonBlue text-slate-900 flex items-center justify-center font-bold">
+                                            {selectedIndex + 1}
+                                        </span>
+                                    )}
+                                    {opt}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    
+                    <button 
+                        onClick={handleSubmit}
+                        disabled={selected.length !== question.options.length}
+                        className={\`mt-4 px-8 py-3 font-bold rounded-full transition-all text-lg 
+                            \${selected.length === question.options.length 
+                                ? 'bg-neonBlue hover:bg-blue-400 text-slate-900 shadow-[0_0_15px_rgba(0,243,255,0.5)] cursor-pointer' 
+                                : 'bg-slate-700 text-slate-500 cursor-not-allowed'}\`}
+                    >
+                        Reihenfolge prüfen
+                    </button>
+                </div>
+            );
+        };
+
+
+        // --- MAIN APP ---
+        const App = () => {
+            const [time, setTime] = useState(0);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [answeredQuestions, setAnsweredQuestions] = useState({}); // { [id]: { isCorrect, userAnswer } }
+
+            // Timer Logic
+            useEffect(() => {
+                let interval;
+                if (isPlaying) {
+                    interval = setInterval(() => {
+                        setTime(prev => prev + 1);
+                    }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [isPlaying]);
+
+            // Formatting time
+            const formatTime = (seconds) => {
+                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const s = (seconds % 60).toString().padStart(2, '0');
+                return \`\${m}:\${s}\`;
+            };
+
+            const adjustTime = (amount) => {
+                setTime(prev => Math.max(0, prev + amount));
+            };
+
+            // Determine active question
+            const activeQuestion = questionsData.find(q => 
+                time >= q.triggerTime && time < (q.triggerTime + q.duration)
+            );
+
+            // Determine next question
+            const nextQuestion = questionsData.find(q => q.triggerTime > time);
+
+            const handleAnswer = (isCorrect, userAnswer) => {
+                setAnsweredQuestions(prev => ({
+                    ...prev,
+                    [activeQuestion.id]: { isCorrect, userAnswer }
+                }));
+            };
+
+            // Calculate score
+            const correctCount = Object.values(answeredQuestions).filter(a => a.isCorrect).length;
+            const totalAnswered = Object.keys(answeredQuestions).length;
+
+            return (
+                <div className="min-h-screen flex flex-col pb-10">
+                    
+                    {/* Header / Control Bar */}
+                    <div className="glass-panel sticky top-0 z-50 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xl">
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neonPink to-neonBlue">
+                                {QUIZ_TITLE}
+                            </h1>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 bg-slate-900/50 p-2 rounded-full border border-slate-700">
+                            <button onClick={() => adjustTime(-60)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-700 text-slate-300" title="-1 Minute">-1m</button>
+                            <button onClick={() => adjustTime(-10)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-700 text-slate-300" title="-10 Sekunden">-10s</button>
+                            
+                            <button 
+                                onClick={() => setIsPlaying(!isPlaying)}
+                                className={\`w-14 h-14 flex items-center justify-center rounded-full text-2xl font-bold text-white shadow-lg transition-all \${isPlaying ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}\`}
+                            >
+                                {isPlaying ? '⏸' : '▶'}
+                            </button>
+                            
+                            <button onClick={() => adjustTime(10)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-700 text-slate-300" title="+10 Sekunden">+10s</button>
+                            <button onClick={() => adjustTime(60)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-700 text-slate-300" title="+1 Minute">+1m</button>
+                        </div>
+
+                        <div className="font-mono text-2xl font-bold tracking-wider text-slate-200">
+                            {formatTime(time)} <span className="text-sm text-slate-500 font-normal">/ {formatTime(TOTAL_DURATION)}</span>
+                        </div>
+                    </div>
+
+                    {/* Main Content Area */}
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 mt-8">
+                        
+                        {!isPlaying && time === 0 ? (
+                            // Start Screen
+                            <div className="glass-panel p-10 rounded-3xl max-w-2xl text-center border-t-4 border-t-neonPink">
+                                <h2 className="text-3xl font-bold mb-6">Willkommen zum Doku-Quiz!</h2>
+                                <p className="text-lg text-slate-300 mb-8 leading-relaxed">
+                                    Starte dieses Quiz <b>genau in dem Moment</b>, in dem die Dokumentation im Klassenraum gestartet wird. 
+                                    <br/><br/>
+                                    Etwa alle 2-3 Minuten ploppt hier eine Frage auf. Du hast immer etwas Zeit zu antworten, <b>bevor</b> die Antwort in der Doku verraten wird!
+                                </p>
+                                <button 
+                                    onClick={() => setIsPlaying(true)}
+                                    className="px-10 py-4 bg-gradient-to-r from-neonPink to-neonBlue text-white text-xl font-bold rounded-full shadow-[0_0_20px_rgba(255,42,133,0.4)] hover:scale-105 transition-transform"
+                                >
+                                    Doku & Quiz jetzt starten
+                                </button>
+                            </div>
+                        ) : activeQuestion ? (
+                            // Question Screen
+                            <div className="glass-panel p-8 md:p-12 rounded-3xl w-full max-w-3xl border-t-4 border-t-neonBlue shadow-2xl animate-[fadeIn_0.5s_ease-out]">
+                                <div className="flex justify-between items-center mb-6">
+                                    <span className="bg-neonBlue/20 text-neonBlue px-4 py-1 rounded-full text-sm font-bold uppercase tracking-wide">
+                                        Frage {questionsData.findIndex(q => q.id === activeQuestion.id) + 1} von {questionsData.length}
+                                    </span>
+                                    <span className="text-slate-400 font-mono flex items-center gap-2">
+                                        <span className="relative flex h-3 w-3">
+                                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                        </span>
+                                        Aktiv
+                                    </span>
+                                </div>
+                                
+                                <h2 className="text-2xl md:text-3xl font-bold mb-8 leading-tight">
+                                    {activeQuestion.text}
+                                </h2>
+
+                                {/* Input Area OR Feedback Area */}
+                                {answeredQuestions[activeQuestion.id] ? (
+                                    <div className={\`p-8 rounded-2xl \${answeredQuestions[activeQuestion.id].isCorrect ? 'bg-green-900/30 border border-green-500' : 'bg-red-900/30 border border-red-500'}\`}>
+                                        <h3 className={\`text-2xl font-bold mb-4 \${answeredQuestions[activeQuestion.id].isCorrect ? 'text-green-400' : 'text-red-400'}\`}>
+                                            {answeredQuestions[activeQuestion.id].isCorrect ? '✓ Richtig!' : '✗ Leider falsch.'}
+                                        </h3>
+                                        <p className="text-lg text-slate-200">
+                                            {activeQuestion.explanation}
+                                        </p>
+                                        <div className="mt-6 text-sm text-slate-400">
+                                            Schau weiter die Doku. Diese Ansicht verschwindet gleich automatisch...
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mt-6">
+                                        {activeQuestion.type === "mc" && <MultipleChoice question={activeQuestion} onAnswer={handleAnswer} />}
+                                        {activeQuestion.type === "slider" && <SliderQuestion question={activeQuestion} onAnswer={handleAnswer} />}
+                                        {activeQuestion.type === "order" && <OrderQuestion question={activeQuestion} onAnswer={handleAnswer} />}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            // Waiting Screen
+                            <div className="flex flex-col items-center justify-center text-center">
+                                <div className="w-32 h-32 rounded-full border-4 border-slate-700 border-t-neonPink animate-spin mb-8"></div>
+                                <h2 className="text-3xl font-bold text-slate-200 mb-4">Doku läuft...</h2>
+                                
+                                {nextQuestion ? (
+                                    <div className="bg-slate-800/50 px-8 py-6 rounded-2xl border border-slate-700">
+                                        <p className="text-lg text-slate-400 mb-2">Gleich kommt die nächste Frage in</p>
+                                        <div className="text-5xl font-mono font-bold text-neonBlue">
+                                            {formatTime(nextQuestion.triggerTime - time)}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="bg-green-900/20 px-8 py-6 rounded-2xl border border-green-500/30">
+                                        <h3 className="text-2xl font-bold text-green-400 mb-2">Alle Fragen beantwortet!</h3>
+                                        <p className="text-lg">Du hast {correctCount} von {totalAnswered} Fragen richtig.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Progress Footer */}
+                    {time > 0 && (
+                        <div className="fixed bottom-0 left-0 right-0 h-2 bg-slate-800">
+                            <div 
+                                className="h-full bg-gradient-to-r from-neonPink to-neonBlue transition-all duration-1000"
+                                style={{ width: \`\${Math.min(100, (time / TOTAL_DURATION) * 100)}%\` }}
+                            ></div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    <\/script>
+</body>
+</html>`;
+
+        // --- GENERATOR LOGIC ---
+        const sampleXML = `<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+    <title>Interaktives Doku-Quiz: Beispiel Doku</title>
+    <totalDuration>2694</totalDuration>
+    <questions>
+        <question>
+            <id>1</id>
+            <timeDocAnswer>23</timeDocAnswer>
+            <triggerTime>3</triggerTime>
+            <duration>40</duration>
+            <type>mc</type>
+            <text>Gleich am Anfang: Warum fangen viele Jugendliche laut der Doku mit dem Vapen an?</text>
+            <options>
+                <option>Weil es gesünder ist und beim Sport hilft.</option>
+                <option>Weil es billiger als Shisha ist, cool wirkt und süß schmeckt.</option>
+                <option>Weil ihre Eltern es ihnen erlauben.</option>
+            </options>
+            <correctAnswer>Weil es billiger als Shisha ist, cool wirkt und süß schmeckt.</correctAnswer>
+            <explanation>Viele Jugendliche finden den Geschmack gut, es riecht besser als Zigaretten und ist günstiger als Shisha.</explanation>
+        </question>
+        <question>
+            <id>2</id>
+            <timeDocAnswer>136</timeDocAnswer>
+            <triggerTime>116</triggerTime>
+            <duration>45</duration>
+            <type>slider</type>
+            <text>Was schätzt du: Wie viel Geld hat Kimberly in den letzten 1,5 Jahren ungefähr für Vapes ausgegeben?</text>
+            <min>0</min>
+            <max>2000</max>
+            <step>50</step>
+            <unit>Euro</unit>
+            <correctAnswer>1000</correctAnswer>
+            <tolerance>200</tolerance>
+            <explanation>Sie hat rund 1000 Euro für ca. 100 Vapes ausgegeben.</explanation>
+        </question>
+        <question>
+            <id>3</id>
+            <timeDocAnswer>251</timeDocAnswer>
+            <triggerTime>231</triggerTime>
+            <duration>50</duration>
+            <type>order</type>
+            <text>Aus welchen vier Hauptteilen besteht eine E-Zigarette? Ordne sie in der logischen Reihenfolge von Oben (wo der Dampf rauskommt) nach Unten (Stromquelle):</text>
+            <options>
+                <option>Heizelement</option>
+                <option>Mundstück</option>
+                <option>Akku</option>
+                <option>Tank für das Liquid</option>
+            </options>
+            <correctOrder>
+                <option>Mundstück</option>
+                <option>Tank für das Liquid</option>
+                <option>Heizelement</option>
+                <option>Akku</option>
+            </correctOrder>
+            <explanation>Eine Vape besteht typischerweise von oben nach unten aus Mundstück, Tank, Heizelement und dem Akku ganz unten.</explanation>
+        </question>
+    </questions>
+</quiz>`;
+
+        const aiPrompt = `Erstelle aus dem folgenden Untertitel-Transkript einer Dokumentation ein interaktives Quiz im XML-Format.
+
+Regeln für das XML:
+1. Root-Element ist <quiz>.
+2. Enthält <title> (Titel der Doku) und <totalDuration> (Länge der Doku in Sekunden).
+3. Unter <questions> folgen mehrere <question> Elemente.
+4. Jede <question> braucht:
+   - <id>: Fortlaufende Nummer
+   - <timeDocAnswer>: Sekunde im Video, in der die Antwort gesagt wird.
+   - <triggerTime>: Sekunde, in der die Frage aufpoppt (ca. 20 Sekunden VOR timeDocAnswer).
+   - <duration>: Anzeigedauer der Frage (ca. 45 Sekunden).
+   - <type>: Fragetyp ("mc", "slider" oder "order").
+   - <text>: Die eigentliche Frage.
+   - <explanation>: Kurze Erklärung, die nach der Beantwortung angezeigt wird.
+
+Spezifische Felder je nach <type>:
+- Für "mc" (Multiple Choice): <options> mit 3-4 <option> Elementen. Dazu <correctAnswer> (muss exakt einem <option> Text entsprechen).
+- Für "slider" (Schätzfrage): <min>, <max>, <step>, <unit> (z.B. Euro, Jahre), <correctAnswer> (Zahl), <tolerance> (erlaubte Abweichung als Zahl).
+- Für "order" (Reihenfolge): <options> mit 4 <option> Elementen. Dazu <correctOrder> mit denselben <option> Elementen in der richtigen Reihenfolge.
+
+Bitte generiere so viele spannende Fragen, dass etwa alle zwei Minuten eine neue Frage gestellt wird.
+
+Gib den XML Code so zurück, dass er direkt als Datei heruntergeladen werden kann.
+`;
+
+        function parseXML(xmlText) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            
+            if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                throw new Error("Ungültiges XML Format");
+            }
+
+            const titleNode = xmlDoc.getElementsByTagName("title")[0];
+            const title = titleNode ? titleNode.textContent || "Doku Quiz" : "Doku Quiz";
+
+            const durationNode = xmlDoc.getElementsByTagName("totalDuration")[0];
+            const totalDuration = durationNode ? parseInt(durationNode.textContent || "2700", 10) : 2700;
+
+            const questions = [];
+            const questionNodes = xmlDoc.getElementsByTagName("question");
+
+            for (let i = 0; i < questionNodes.length; i++) {
+                const qNode = questionNodes[i];
+                
+                const id = parseInt(qNode.getElementsByTagName("id")[0]?.textContent || String(i + 1), 10);
+                const timeDocAnswer = parseInt(qNode.getElementsByTagName("timeDocAnswer")[0]?.textContent || "0", 10);
+                const triggerTime = parseInt(qNode.getElementsByTagName("triggerTime")[0]?.textContent || "0", 10);
+                const duration = parseInt(qNode.getElementsByTagName("duration")[0]?.textContent || "45", 10);
+                const type = qNode.getElementsByTagName("type")[0]?.textContent || "mc";
+                const text = qNode.getElementsByTagName("text")[0]?.textContent || "";
+                const explanation = qNode.getElementsByTagName("explanation")[0]?.textContent || "";
+
+                let questionObj = {
+                    id, timeDocAnswer, triggerTime, duration, type, text, explanation
+                };
+
+                if (type === "mc") {
+                    const optionsNodes = qNode.getElementsByTagName("options")[0]?.getElementsByTagName("option");
+                    const options = optionsNodes ? Array.from(optionsNodes).map(n => n.textContent) : [];
+                    const correctAnswer = qNode.getElementsByTagName("correctAnswer")[0]?.textContent || "";
+                    questionObj = { ...questionObj, options, correctAnswer };
+                } else if (type === "slider") {
+                    const min = parseInt(qNode.getElementsByTagName("min")[0]?.textContent || "0", 10);
+                    const max = parseInt(qNode.getElementsByTagName("max")[0]?.textContent || "100", 10);
+                    const step = parseInt(qNode.getElementsByTagName("step")[0]?.textContent || "1", 10);
+                    const unit = qNode.getElementsByTagName("unit")[0]?.textContent || "";
+                    const correctAnswer = parseInt(qNode.getElementsByTagName("correctAnswer")[0]?.textContent || "0", 10);
+                    const tolerance = parseInt(qNode.getElementsByTagName("tolerance")[0]?.textContent || "0", 10);
+                    questionObj = { ...questionObj, min, max, step, unit, correctAnswer, tolerance };
+                } else if (type === "order") {
+                    const optionsNodes = qNode.getElementsByTagName("options")[0]?.getElementsByTagName("option");
+                    const options = optionsNodes ? Array.from(optionsNodes).map(n => n.textContent) : [];
+                    const correctOrderNodes = qNode.getElementsByTagName("correctOrder")[0]?.getElementsByTagName("option");
+                    const correctOrder = correctOrderNodes ? Array.from(correctOrderNodes).map(n => n.textContent) : [];
+                    questionObj = { ...questionObj, options, correctOrder };
+                }
+
+                questions.push(questionObj);
+            }
+
+            return { title, totalDuration, questions };
+        }
+
+        const App = () => {
+            const [parsedData, setParsedData] = useState(null);
+            const [error, setError] = useState(null);
+            const [copied, setCopied] = useState(false);
+            const fileInputRef = useRef(null);
+
+            const handleCopyPrompt = () => {
+                navigator.clipboard.writeText(aiPrompt);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            const handleFileUpload = (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const xmlText = e.target?.result;
+                        const data = parseXML(xmlText);
+                        setParsedData(data);
+                        setError(null);
+                    } catch (err) {
+                        setError(err.message || "Fehler beim Parsen der XML-Datei.");
+                        setParsedData(null);
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            const handleDownloadHTML = () => {
+                if (!parsedData) return;
+                
+                const htmlContent = generateHTML(parsedData.title, parsedData.totalDuration, parsedData.questions);
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${parsedData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_quiz.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            const handleDownloadSampleXML = () => {
+                const blob = new Blob([sampleXML], { type: 'text/xml' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'beispiel_quiz.xml';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            const handleDownloadGenerator = () => {
+                const htmlContent = document.documentElement.outerHTML;
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'doku_quiz_generator.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto">
+                    <header className="mb-10 text-center">
+                        <h1 className="text-4xl font-bold text-slate-800 mb-4">Doku Quiz Generator</h1>
+                        <p className="text-slate-600 text-lg max-w-2xl mx-auto">
+                            Erstelle interaktive HTML-Quizzes aus XML-Dateien. Nutze KI, um die Fragen automatisch aus einem Untertitel generieren zu lassen.
+                        </p>
+                    </header>
+
+                    {/* Step 1: Untertitel herunterladen */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
+                        <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-3">
+                            <div className="bg-orange-100 p-2 rounded-lg">
+                                <Download className="w-6 h-6 text-orange-600" />
+                            </div>
+                            Schritt 1: Untertitel herunterladen
+                        </h2>
+                        
+                        <div className="text-slate-600 space-y-4">
+                            <p>Um ein Quiz zu erstellen, benötigst du zuerst das Transkript (die Untertitel) der Dokumentation.</p>
+                            
+                            <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                                <h3 className="font-semibold text-slate-800 mb-2 flex items-center gap-2">
+                                    Für YouTube-Videos:
+                                </h3>
+                                <p>Nutze <a href="https://www.downloadyoutubesubtitles.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Download YouTube Subtitles</a>, um die <code>.srt</code> oder <code>.txt</code> Datei herunterzuladen.</p>
+                            </div>
+
+                            <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                                <h3 className="font-semibold text-slate-800 mb-2 flex items-center gap-2">
+                                    Für ARD/ZDF Mediatheken:
+                                </h3>
+                                <p>Suche die Doku auf <a href="https://mediathekviewweb.de/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">MediathekViewWeb</a>.</p>
+                                <div className="mt-3 flex items-start gap-3 text-sm bg-orange-50 text-orange-800 p-4 rounded-lg border border-orange-100">
+                                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                    <div>
+                                        <strong>Wichtig:</strong> Wenn du dort auf das Untertitel-Symbol klickst, öffnet sich der Text oft nur in einem neuen Tab. 
+                                        Um ihn zu speichern, drücke einfach <code>Strg + S</code> (Windows) bzw. <code>Cmd + S</code> (Mac) oder mache einen Rechtsklick und wähle "Speichern unter...". Speichere die Datei am besten als <code>.txt</code> oder <code>.srt</code>.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Step 2: KI Prompt */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
+                        <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-3">
+                            <div className="bg-purple-100 p-2 rounded-lg">
+                                <Bot className="w-6 h-6 text-purple-600" />
+                            </div>
+                            Schritt 2: XML mit KI generieren
+                        </h2>
+                        
+                        <div className="text-slate-600 mb-6 space-y-2">
+                            <p>1. Kopiere den untenstehenden Prompt.</p>
+                            <p>2. Öffne ein LLM wie <strong>ChatGPT</strong>, <strong>Gemini</strong> oder <strong>Claude</strong>.</p>
+                            <p>3. Füge den Prompt ein und hänge am Ende den Text deiner heruntergeladenen Untertitel-Datei an.</p>
+                            <p>4. Lade die generierte XML-Antwort der KI als <code>.xml</code> Datei auf deinen PC herunter.</p>
+                        </div>
+
+                        <div className="relative bg-slate-900 rounded-xl p-6 border border-slate-800">
+                            <button 
+                                onClick={handleCopyPrompt}
+                                className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                            >
+                                {copied ? (
+                                    <><Check className="w-4 h-4 text-green-400" /> Kopiert!</>
+                                ) : (
+                                    <><Copy className="w-4 h-4" /> Prompt kopieren</>
+                                )}
+                            </button>
+                            <pre className="text-slate-300 text-sm whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto pr-32">
+                                {aiPrompt}
+                            </pre>
+                        </div>
+                    </div>
+
+                    {/* Step 3: Upload & Generate */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
+                        <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-3">
+                            <div className="bg-blue-100 p-2 rounded-lg">
+                                <FileCode2 className="w-6 h-6 text-blue-600" />
+                            </div>
+                            Schritt 3: XML hochladen & HTML erstellen
+                        </h2>
+                        <p className="text-slate-600 mb-6">
+                            Lade nun die von der KI generierte (oder selbst erstellte) XML-Datei hier hoch, um dein fertiges Quiz herunterzuladen.
+                        </p>
+
+                        <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl p-10 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+                             onClick={() => fileInputRef.current?.click()}>
+                            <Upload className="w-12 h-12 text-blue-500 mb-4" />
+                            <h3 className="text-xl font-semibold text-slate-700 mb-2">XML-Datei hochladen</h3>
+                            <p className="text-slate-500 text-center max-w-md">
+                                Klicke hier, um deine XML-Datei mit den Quizfragen auszuwählen.
+                            </p>
+                            <input 
+                                type="file" 
+                                accept=".xml" 
+                                className="hidden" 
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-red-700">
+                                <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+                                <div>
+                                    <h4 className="font-semibold">Fehler beim Laden</h4>
+                                    <p className="text-sm">{error}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {parsedData && (
+                            <div className="mt-8 p-6 bg-blue-50 border border-blue-100 rounded-xl">
+                                <div className="flex items-center gap-3 mb-4 text-blue-800">
+                                    <CheckCircle2 className="w-6 h-6 text-blue-600" />
+                                    <h3 className="text-xl font-semibold">Erfolgreich geladen!</h3>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-white p-4 rounded-lg border border-blue-100 shadow-sm">
+                                        <div className="text-sm text-slate-500 mb-1">Titel</div>
+                                        <div className="font-medium text-slate-800">{parsedData.title}</div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-lg border border-blue-100 shadow-sm">
+                                        <div className="text-sm text-slate-500 mb-1">Fragen</div>
+                                        <div className="font-medium text-slate-800">{parsedData.questions.length} Fragen erkannt</div>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={handleDownloadHTML}
+                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-2 transition-colors shadow-sm"
+                                >
+                                    <Download className="w-5 h-5" />
+                                    HTML-Datei generieren & herunterladen
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Optional: Sample Download & Standalone Download */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                            <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-slate-500" />
+                                Brauchst du eine Vorlage?
+                            </h3>
+                            <p className="text-slate-600 mb-6 text-sm">
+                                Lade dir unsere Beispiel-XML herunter, um zu sehen, wie die Datei aufgebaut sein muss, falls du sie manuell bearbeiten möchtest.
+                            </p>
+                            <button 
+                                onClick={handleDownloadSampleXML}
+                                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                            >
+                                <Download className="w-4 h-4" />
+                                Beispiel XML herunterladen
+                            </button>
+                        </div>
+
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 border-t-4 border-t-purple-500">
+                            <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                <Download className="w-5 h-5 text-purple-500" />
+                                App offline nutzen?
+                            </h3>
+                            <p className="text-slate-600 mb-6 text-sm">
+                                Lade diesen gesamten Generator als eine einzige HTML-Datei herunter. Du kannst sie dann jederzeit offline ohne Internetverbindung öffnen!
+                            </p>
+                            <button 
+                                onClick={handleDownloadGenerator}
+                                className="w-full py-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                            >
+                                <Download className="w-4 h-4" />
+                                Generator als HTML speichern
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
